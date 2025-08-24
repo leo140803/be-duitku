@@ -1,23 +1,46 @@
-# Finance App Backend
+#  Duitku Finance App Backend
 
-A Go backend application for managing personal finances, now integrated with Supabase.
+A robust Go backend application for managing personal finances, built with modern architecture and Supabase integration.
 
-## Features
+## ✨ Features
 
-- Account management (create, list accounts)
-- Supabase integration for database operations
-- RESTful API endpoints
+-  **Authentication & Authorization** - JWT-based auth with refresh tokens
+- 💰 **Account Management** - Create and manage multiple financial accounts
+- 📊 **Category Management** - Organize transactions with custom categories
+- 💳 **Transaction Tracking** - Comprehensive income/expense management
+- 🗄️ **Supabase Integration** - Modern database with real-time capabilities
+- 🚀 **RESTful API** - Clean, documented endpoints
+- 🔒 **Middleware Protection** - Secure route handling
 
-## Setup
+## 🛠️ Tech Stack
 
-### Prerequisites
+- **Language**: Go 1.24.6+
+- **Framework**: Gin (Web framework)
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: JWT tokens
+- **Environment**: Go modules
+
+## 📋 Prerequisites
 
 - Go 1.24.6 or higher
 - Supabase project
+- Git
 
-### Environment Variables
+##  Quick Start
 
-Create a `.env` file in the root directory with the following variables:
+### 1. Clone Repository
+```bash
+git clone <your-repo-url>
+cd finance-app-backend
+```
+
+### 2. Install Dependencies
+```bash
+go mod tidy
+```
+
+### 3. Environment Setup
+Create a `.env` file in the root directory:
 
 ```env
 # Supabase Configuration
@@ -28,20 +51,39 @@ SUPABASE_ANON_KEY=your-anon-key-here
 PORT=8080
 ```
 
-### Getting Supabase Credentials
+### 4. Get Supabase Credentials
+1. Go to [Supabase Dashboard](https://app.supabase.com)
+2. Select your project
+3. Navigate to **Settings** → **API**
+4. Copy the **Project ID** and **anon/public key**
+5. Add them to your `.env` file
 
-1. Go to your Supabase project dashboard
-2. Navigate to Settings > API
-3. Copy the Project ID (not the full URL) and anon/public key
-4. Add them to your `.env` file
+**⚠️ Important**: Use only the project ID (e.g., `tiqqkmlbntrbpczlocmt`) for `SUPABASE_PROJECT_ID`, not the full URL.
 
-**Note:** Use only the project ID (e.g., `tiqqkmlbntrbpczlocmt`) for `SUPABASE_PROJECT_ID`, not the full URL.
+### 5. Run Application
+```bash
+# Development mode
+go run cmd/main.go
 
-### Database Schema
+# Build and run
+go build -o main cmd/main.go
+./main
+```
 
-Make sure you have the following tables in your Supabase database:
+The server will start on the port specified in your `PORT` environment variable (default: 8080).
+
+## ️ Database Schema
+
+Run these SQL commands in your Supabase SQL editor:
 
 ```sql
+-- Users table
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email TEXT UNIQUE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
 -- Accounts table
 CREATE TABLE accounts (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -59,13 +101,6 @@ CREATE TABLE categories (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Users table
-CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email TEXT UNIQUE NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
 -- Transactions table
 CREATE TABLE transactions (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -79,48 +114,49 @@ CREATE TABLE transactions (
     balance_after DECIMAL(10,2) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Create indexes for better performance
+CREATE INDEX idx_transactions_user_id ON transactions(user_id);
+CREATE INDEX idx_transactions_date ON transactions(date);
+CREATE INDEX idx_accounts_user_id ON accounts(user_id);
+CREATE INDEX idx_categories_user_id ON categories(user_id);
 ```
 
-## Running the Application
-
-```bash
-# Install dependencies
-go mod tidy
-
-# Run the application
-go run cmd/main.go
-```
-
-The server will start on the port specified in your `PORT` environment variable (default: 8080).
-
-## API Endpoints
+##  API Endpoints
 
 ### Authentication (Public)
 
-- `POST /api/auth/register` - Register a new user
-- `POST /api/auth/login` - Login user
-- `POST /api/auth/logout` - Logout user
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/auth/register` | Register a new user |
+| `POST` | `/api/auth/login` | Login user |
+| `POST` | `/api/auth/logout` | Logout user |
 
-#### Register Request Body
+#### Request/Response Examples
 
-```json
+**Register User**
+```bash
+POST /api/auth/register
+Content-Type: application/json
+
 {
     "email": "user@example.com",
     "password": "password123"
 }
 ```
 
-#### Login Request Body
+**Login User**
+```bash
+POST /api/auth/login
+Content-Type: application/json
 
-```json
 {
     "email": "user@example.com",
     "password": "password123"
 }
 ```
 
-#### Auth Response
-
+**Auth Response**
 ```json
 {
     "user": {
@@ -189,19 +225,37 @@ Authorization: Bearer your-access-token-here
 }
 ```
 
-**Note:** The `balance_after` field is automatically calculated by the API based on the previous transaction balance.
+**📝 Note**: The `balance_after` field is automatically calculated by the API based on the previous transaction balance.
 
-## Dependencies
+## 📦 Dependencies
 
-- `github.com/gin-gonic/gin` - Web framework
-- `github.com/lengzuo/supa` - Supabase Go client
-- `github.com/joho/godotenv` - Environment variable loading
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `github.com/gin-gonic/gin` | Latest | Web framework |
+| `github.com/lengzuo/supa` | Latest | Supabase Go client |
+| `github.com/joho/godotenv` | Latest | Environment variable loading |
 
-## Migration from Direct PostgreSQL
+## 🔄 Migration from Direct PostgreSQL
 
 This application has been migrated from using direct PostgreSQL connections to Supabase. The main changes include:
 
-1. Replaced `pgx` driver with `github.com/lengzuo/supa`
-2. Updated database operations to use Supabase client
-3. Changed environment variables from `DATABASE_URL` to `SUPABASE_PROJECT_ID` and `SUPABASE_ANON_KEY`
-4. Simplified database queries using Supabase's query builder
+1. ✅ Replaced `pgx` driver with `github.com/lengzuo/supa`
+2. ✅ Updated database operations to use Supabase client
+3. ✅ Changed environment variables from `DATABASE_URL` to `SUPABASE_PROJECT_ID` and `SUPABASE_ANON_KEY`
+4. ✅ Simplified database queries using Supabase's query builder
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
+
+If you encounter any issues or have questions:
+
+1. Check the [Issues](../../issues) page
+2. Create a new issue with detailed information
+3. Contact the development team
+
+---
+
+**Made with ❤️ by the Duitku Team**
