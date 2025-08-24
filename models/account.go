@@ -1,7 +1,7 @@
 package models
 
 type Account struct {
-	ID             string  `json:"id"`
+	ID             string  `json:"id,omitempty"`
 	UserID         string  `json:"user_id"`
 	Name           string  `json:"name"`
 	InitialBalance float64 `json:"initial_balance"`

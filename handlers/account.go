@@ -44,9 +44,6 @@ func CreateAccount(c *gin.Context) {
 
 	// Set user ID from authentication context
 	acc.UserID = userID.(string)
-	
-	// Clear any existing ID or CreatedAt to let database handle them
-	acc.ID = ""
 
 	// Use interface{} to handle flexible response format from Supabase
 	var result interface{}
