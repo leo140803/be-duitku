@@ -5,7 +5,7 @@ type Account struct {
 	UserID         string  `json:"user_id"`
 	Name           string  `json:"name"`
 	InitialBalance float64 `json:"initial_balance"`
-	CreatedAt      string  `json:"created_at"`
+	CreatedAt      string  `json:"created_at,omitempty"`
 }
 
 // struct khusus untuk update saldo

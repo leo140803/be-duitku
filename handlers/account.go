@@ -47,7 +47,6 @@ func CreateAccount(c *gin.Context) {
 	
 	// Clear any existing ID or CreatedAt to let database handle them
 	acc.ID = ""
-	acc.CreatedAt = ""
 
 	// Use interface{} to handle flexible response format from Supabase
 	var result interface{}
