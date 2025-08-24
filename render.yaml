@@ -3,7 +3,7 @@ services:
     name: go-api
     env: go
     plan: free
-    buildCommand: go build -o app .
+    buildCommand: go1.24 build -o server .
     startCommand: ./app
     autoDeploy: true
     envVars:

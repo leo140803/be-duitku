@@ -1,15 +1,14 @@
-# Gunakan image golang resmi
-FROM golang:1.21 as builder
+FROM golang:1.24 AS build
 
 WORKDIR /app
-COPY . .
+COPY go.mod go.sum ./
+RUN go mod download
 
+COPY . .
 RUN go build -o server .
 
-# Stage kedua: image ringan
-FROM debian:bullseye-slim
+# image lebih kecil pakai distroless
+FROM gcr.io/distroless/base-debian12
 WORKDIR /app
-COPY --from=builder /app/server .
-
-EXPOSE 8080
-CMD ["./server"]
+COPY --from=build /app/server .
+CMD ["/app/server"]
