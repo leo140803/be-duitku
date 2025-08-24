@@ -12,7 +12,7 @@ func SetupRouter() *gin.Engine {
 
 	// CORS middleware configuration
 	corsConfig := cors.DefaultConfig()
-	corsConfig.AllowOrigins = []string{"http://localhost:3000", "http://127.0.0.1:3000", "https://fe-duitku-git-main-leonardo-nickholas-andriantos-projects.vercel.app/"}
+	corsConfig.AllowOrigins = []string{"http://localhost:3000", "http://127.0.0.1:3000", "https://fe-duitku-git-main-leonardo-nickholas-andriantos-projects.vercel.app"}
 	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
 	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
 	corsConfig.AllowCredentials = true
