@@ -7,7 +7,7 @@ RUN go mod download
 COPY . .
 RUN go build -o server ./cmd
 
-# image lebih kecil pakai distroless
+# runtime image lebih kecil
 FROM gcr.io/distroless/base-debian12
 WORKDIR /app
 COPY --from=build /app/server .
