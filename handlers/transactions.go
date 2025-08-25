@@ -123,7 +123,7 @@ func UpdateTransaction(c *gin.Context) {
 		return
 	}
 
-	txID := c.Param("id") // asumsi pakai /transactions/:id
+	txID := c.Param("id")
 
 	// Ambil transaksi lama
 	var oldTx []models.Transaction
@@ -148,61 +148,85 @@ func UpdateTransaction(c *gin.Context) {
 	newTx.ID = txID
 	newTx.UserID = userID.(string)
 
-	// Ambil account
-	var accounts []models.Account
+	ctx := context.Background()
+
+	// -----------------------------
+	// Step 1: Revert saldo account lama
+	// -----------------------------
+	var oldAcc []models.Account
 	err = config.SupaClient.DB.From("accounts").
 		Select("*").
 		Eq("id", prevTx.AccountID).
-		Execute(context.Background(), &accounts)
-
-	if err != nil || len(accounts) == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Account not found"})
+		Eq("user_id", userID.(string)).
+		Execute(ctx, &oldAcc)
+	if err != nil || len(oldAcc) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Old account not found"})
 		return
 	}
-	account := accounts[0]
-	lastBalance := account.InitialBalance
+	accountOld := oldAcc[0]
 
-	// Step 1: Reverse pengaruh transaksi lama
 	if prevTx.Type == "INCOME" {
-		lastBalance -= prevTx.Amount
+		accountOld.InitialBalance -= prevTx.Amount
 	} else {
-		lastBalance += prevTx.Amount
+		accountOld.InitialBalance += prevTx.Amount
 	}
 
-	// Step 2: Apply transaksi baru
-	if newTx.Type == "INCOME" {
-		lastBalance += newTx.Amount
-	} else {
-		lastBalance -= newTx.Amount
+	// Update saldo account lama
+	err = config.SupaClient.DB.From("accounts").
+		Update(models.UpdateAccountBalance{InitialBalance: accountOld.InitialBalance}).
+		Eq("id", prevTx.AccountID).
+		Execute(ctx, nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update old account balance"})
+		return
 	}
-	newTx.BalanceAfter = lastBalance
+
+	// -----------------------------
+	// Step 2: Apply transaksi baru ke account baru
+	// -----------------------------
+	var newAcc []models.Account
+	err = config.SupaClient.DB.From("accounts").
+		Select("*").
+		Eq("id", newTx.AccountID).
+		Eq("user_id", userID.(string)).
+		Execute(ctx, &newAcc)
+	if err != nil || len(newAcc) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "New account not found"})
+		return
+	}
+	accountNew := newAcc[0]
+
+	if newTx.Type == "INCOME" {
+		accountNew.InitialBalance += newTx.Amount
+	} else {
+		accountNew.InitialBalance -= newTx.Amount
+	}
+	newTx.BalanceAfter = accountNew.InitialBalance
 
 	// Update transaksi
 	var result interface{}
 	err = config.SupaClient.DB.From("transactions").
 		Update(newTx).
 		Eq("id", txID).
-		Execute(context.Background(), &result)
-
+		Execute(ctx, &result)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update transaction"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Update saldo account
-	updateData := models.UpdateAccountBalance{InitialBalance: lastBalance}
+	// Update saldo account baru
 	err = config.SupaClient.DB.From("accounts").
-		Update(updateData).
+		Update(models.UpdateAccountBalance{InitialBalance: accountNew.InitialBalance}).
 		Eq("id", newTx.AccountID).
-		Execute(context.Background(), nil)
-
+		Execute(ctx, nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update account balance"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update new account balance"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Transaction updated successfully"})
 }
+
 
 func DeleteTransaction(c *gin.Context) {
 	userID, exists := c.Get("user_id")
